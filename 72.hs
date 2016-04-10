@@ -10,5 +10,10 @@ tree5 = Node 'a' [
 bottomUp :: Tree a -> [a]
 bottomUp (Node x xs) = concatMap bottomUp xs ++ [x]
 
+bottomUpAcc :: Tree a -> [a]
+bottomUpAcc t = bottomUpAcc' t []
+  where
+    bottomUpAcc' (Node x ts) acc = foldr bottomUpAcc' (x:acc) ts
+
 main :: IO ()
-main = print $ bottomUp tree5
+main = print $ bottomUpAcc tree5
