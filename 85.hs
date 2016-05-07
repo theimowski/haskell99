@@ -1,3 +1,5 @@
+import Data.List
+
 data Graph a = Graph [a] [(a,a)] deriving (Show, Eq)
 data Adj   a = Adj   [(a,[a])]   deriving (Show, Eq)
 
@@ -12,17 +14,22 @@ graphToAdj (Graph (x:xs) ys) = Adj ((x, ys >>= f) : zs)
     Adj zs = graphToAdj (Graph xs ys)
 
 canon :: Eq a => Graph a -> String
-canon g@(Graph xs ys) = minimum $ map (concat . f) perm
+canon g@(Graph xs ys) = minimum $ map f perm
   where
-    Adj a= graphToAdj g
-    n    = length a
-    perm = 
+    Adj a = graphToAdj g
+    n     = length a
+    perm  = 
       foldr 
         (\_ ts -> [ h : t | t <- ts, h <- [1..n], h `notElem` t])
         [[]]
         [1..n]
-    f p  = map (\i -> concatMap (show . m p) $ snd (a !! (i-1))) p
-    m p i= snd $ head $ dropWhile ((/=i) . fst) $ zip xs p
+    f p   = 
+      show $
+      map snd $
+      sortBy (\(x1,_) (x2,_) -> compare x1 x2) $
+      map (\(x,i) -> (i, (sort $ map (m p) $ snd $ head $ dropWhile ((/=x) . fst) a))) $
+      zip xs p
+    m p i = snd $ head $ dropWhile ((/=i) . fst) $ zip xs p
 
 iso :: Eq a => Graph a -> Graph a -> Bool
 iso g@(Graph xs ys) g'@(Graph xs' ys') =
@@ -40,6 +47,12 @@ graphH1 = Graph [1, 2, 3, 4, 5, 6, 7, 8]
       [(1, 2), (1, 4), (1, 5), (6, 2), (6, 5), (6, 7),
        (8, 4), (8, 5), (8, 7), (3, 2), (3, 4), (3, 7)]
 
+gg :: Graph Char
+gg = Graph "abc" [('a','b'),('a','c')]
+
+hh :: Graph Char
+hh = Graph "def" [('f','e'),('d','f')]
+
 main :: IO ()
 --main = print $ iso graphG1 graphH1
-main = print $ map canon [graphG1,graphH1]
+main = print $ iso gg hh
