@@ -1,4 +1,4 @@
-import Data.List (sortBy,partition)
+import Data.List (sortBy)
 
 data Graph a = Graph [a] [(a,a)] deriving (Show, Eq)
 data Adj   a = Adj   [(a,[a])]   deriving (Show, Eq)
@@ -14,19 +14,27 @@ graphToAdj (Graph (v:vs) es) = Adj ((v,es >>= f) : zs)
     Adj zs = graphToAdj (Graph vs es)
 
 
-sortBy' :: (Ord b) => (a -> b) -> [a] -> [a]
-sortBy' f xs = sortBy (\x y -> compare (f x) (f y)) xs
+sortByDesc :: (Ord b) => (a -> b) -> [a] -> [a]
+sortByDesc f = sortBy (\x y -> compare (f y) (f x))
 
-kcolor :: (Eq a) => Graph a -> [(a,Int)]
+sortBy' :: (Ord b) => (a -> b) -> [a] -> [a]
+sortBy' f = sortBy (\x y -> compare (f x) (f y))
+
+kcolor :: (Ord a) => Graph a -> [(a,Int)]
 kcolor g = kcolor' [] 1 ordered
   where
     Adj a                = graphToAdj g
-    ordered              = map fst $ sortBy' (length . snd) a
+    ordered              = map fst $ sortByDesc (length . snd) a
     adjs v               = snd $ head $ dropWhile ((/=v) . fst) a
-    kcolor' acc _ []     = acc
-    kcolor' acc c (v:vs) =
-      let (adj,nadj) = partition (\x -> x `elem` adjs v) (v:vs) in
-      kcolor' ((map (\x -> (x,c)) nadj) ++ acc) (c+1) adj
+    kcolor' acc _ []     = sortBy' fst acc
+    kcolor' acc c (v:vs) = kcolor' (xs ++ acc) (c+1) (reverse left)
+      where
+        (vs',left) = 
+          foldr 
+            (\v' (l,r) -> if v' `elem` (l >>= adjs) then (l,v':r) else (v':l,r)) 
+            ([v],[]) 
+            vs
+        xs         = map (\x -> (x,c)) vs'
 
 g1 :: Graph Char
 g1 =  Graph ['a','b','c','d','e','f','g','h','i','j'] 
